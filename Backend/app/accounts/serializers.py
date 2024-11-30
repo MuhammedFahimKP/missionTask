@@ -6,31 +6,50 @@ from rest_framework.exceptions import NotFound,NotAuthenticated
 
 from utils.exception import AlreadyExist
 
-
 from .models import Department
+from .utils import get_jwt_token
+
+
 
 USER = get_user_model() 
-
-
 class EmployeeListSerializer(serializers.ModelSerializer):
+    
     
     
     dept = serializers.SerializerMethodField()
  
-    def get_department(self,obj) -> str:
-        return obj.department.name
+    def get_dept(self,obj) -> str:
+        return obj.dept.name
    
     
     class Meta:
+        model = USER
         fields = [ 'id','name','dept','email']
-   
+
+
+class EmployeeeProfileSerializer(serializers.ModelSerializer):
+    
+    
+    dept = serializers.SerializerMethodField()
+    
+    
+    def get_dept(self,obj) -> str:
+        return obj.dept.name 
+    
+    
+    class Meta:
+        model = USER
+        fields = ['name','dept','email']
+       
     
 
 
 class EmployeeCreateSerailizer(serializers.ModelSerializer):
     
     dept = serializers.CharField()
-    
+    email = serializers.EmailField()
+    name  = serializers.CharField(min_length=4,required=True)
+    password = serializers.CharField(max_length=16,min_length=6,write_only=True,required=True)
     
     
     def validate(self, data):
@@ -52,7 +71,8 @@ class EmployeeCreateSerailizer(serializers.ModelSerializer):
             raise serializers.ValidationError({'dept':f'{dept} is not valid department'}) 
         
         dept = _dept.first()
-        data['dept'] = dept
+        data['dept'] = dept.name
+        
         
         
             
@@ -66,7 +86,7 @@ class EmployeeCreateSerailizer(serializers.ModelSerializer):
         instance = USER.objects.create(**validated_data)
         response_data = self.to_representation(instance) 
         
-        response_data['dept'] = validated_data['dept'].name
+        response_data['dept'] = validated_data['dept']
         
         return response_data
     
@@ -96,6 +116,9 @@ class EmployeeCreateSerailizer(serializers.ModelSerializer):
           
 class EmployeeUpdateSerailizer(serializers.ModelSerializer):
     
+    email = serializers.EmailField(required=False)
+    dept  = serializers.CharField(required=False)
+    name  = serializers.CharField(min_length=4,required=False)
     
     def validate(self, data):
         
@@ -115,7 +138,7 @@ class EmployeeUpdateSerailizer(serializers.ModelSerializer):
                 raise serializers.ValidationError({'dept':f'{dept} is not valid department'})
              
             dept = _dept.first()
-            data['dept'] = dept
+            data['dept'] = dept.name
         
         
         
@@ -137,7 +160,7 @@ class EmployeeUpdateSerailizer(serializers.ModelSerializer):
         instance.save()
     
         response_data     =  self.to_representation(instance)
-        response_data['department'] = validated_data['dept'].name if validated_data['dept'] else instance.dept.name 
+        response_data['dept'] = validated_data['dept']  
         
         return response_data
         
@@ -152,7 +175,7 @@ class EmployeeUpdateSerailizer(serializers.ModelSerializer):
     class Meta:
         
         model  = USER
-        fields = [ 'id','name','email','password','dept']
+        fields = [ 'id','name','email','dept']
         extra_kwargs = {
             
             'id' : {
@@ -171,9 +194,13 @@ class EmployeeUpdateSerailizer(serializers.ModelSerializer):
 class EmployeeLoginSerailizer(serializers.Serializer):
     
     email    = serializers.EmailField()
-    name     = serializers.CharField(write_only=True)
+    name     = serializers.CharField(read_only=True)
     dept     = serializers.CharField(read_only=True)
-    password = serializers.CharField(write_only=True)  
+    password  = serializers.CharField(max_length=16,min_length=6,write_only=True,required=True)
+    access   = serializers.CharField(read_only=True)
+    refresh  = serializers.CharField(read_only=True) 
+    
+    
     
     
     
@@ -195,15 +222,20 @@ class EmployeeLoginSerailizer(serializers.Serializer):
         if user.check_password(password) == False:
             
             raise NotAuthenticated({'password':'incorrect password'})
+        
+        
+        tokens = get_jwt_token(user)
                
         
         data = {
             'name':user.name,
             'email':user.email,
-            'dept':user.dept.name
+            'dept':user.dept.name,
+            'access':tokens['access'],
+            'refresh':tokens['refresh'],
         }    
             
-        return 
+        return data
     
     class Meta:
         
@@ -212,8 +244,32 @@ class EmployeeLoginSerailizer(serializers.Serializer):
 class EmployeePasswordResetSerailizer(serializers.Serializer):
     
     
+    password = serializers.CharField(max_length=16,min_length=6,write_only=True,required=True)
     
-    def validate(self, attrs):    
-        return super().validate(attrs)
+    
+    def validate(self,data):
         
+        request = self.context.get('request')
+        
+        if request is not None and request.user :
+            
+            password = data['password']        
+            request.user.set_password(password)
+                        
+        return data
+    
+    
+    class Meta:
+        
+        fields = ['password']
+        
+    
+class DepartmentListSerializer(serializers.ModelSerializer):
+    
+
+    
+    class Meta:
+        model = Department
+        fields = ['name']
+    
     

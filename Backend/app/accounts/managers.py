@@ -43,7 +43,7 @@ class MyUserManger(BaseUserManager):
             
         _dept = Department.objects.filter(name__iexact=dept) 
         
-        if not _dept.exists():
+        if _dept.exists() == False:
             raise ValueError(_(f'{dept} is not valid department'))
         
         dept = _dept.first()

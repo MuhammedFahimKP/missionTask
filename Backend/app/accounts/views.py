@@ -10,13 +10,25 @@ from rest_framework.response import Response
 
 
 
-from .serializers import EmployeeCreateSerailizer,EmployeeListSerializer,EmployeeUpdateSerailizer
+from .serializers import (
+    
+    EmployeeCreateSerailizer,
+    EmployeeListSerializer,
+    EmployeeUpdateSerailizer,
+    EmployeeLoginSerailizer,
+    EmployeePasswordResetSerailizer,
+    EmployeeeProfileSerializer,
+    DepartmentListSerializer,
+)
 from .pagination import EmployeeLimitOffsetPagination
+from .mixins import BasicJWTAuthMixin,AdminOrHrJWTAuthMixin
+from .models import Department
+
 
 USER = get_user_model()
 
 
-class EmployeeCreateListAPIView(generics.GenericAPIView):
+class EmployeeCreateListAPIView(AdminOrHrJWTAuthMixin,generics.GenericAPIView):
     
     
     
@@ -65,12 +77,12 @@ class EmployeeCreateListAPIView(generics.GenericAPIView):
         
         if serializer.is_valid(raise_exception=True):
             data = serializer.save()
-            return Response(data,status.HTTP_201_CRETED)
+            return Response(data,status.HTTP_201_CREATED)
         
-        return Response(serializer.errors,status=status.HTTP_201_CREATED)
+        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
     
 
-class EmployeeRetriveUpdateDestroyAPIView(generics.GenericAPIView):
+class EmployeeRetriveUpdateDestroyAPIView(AdminOrHrJWTAuthMixin,generics.GenericAPIView):
     
     
     serializer_class       = None
@@ -151,20 +163,56 @@ class EmployeeRetriveUpdateDestroyAPIView(generics.GenericAPIView):
         return Response({},status=status.HTTP_204_NO_CONTENT)
 
 
-class EmployeeLoginAPIView(generics.GenericAPIView):
+class EmployeeLoginAPIView(views.APIView):
+    
     
     
     def post(self,request):
         
-        serailizer = None
+        serailizer = EmployeeLoginSerailizer(data=request.data)
         
         if serailizer.is_valid(raise_exception=True):
             
             data = serailizer.data
             
-            return Response(serailizer.data ,status=status.HTTP_200_OK)
-        
-        
+            return Response(data ,status=status.HTTP_200_OK)
+    
         return Response(serailizer.error,status=status.HTTP_400_BAD_REQUEST)
              
-           
+class EmployeePasswordResetAPIView(BasicJWTAuthMixin,views.APIView):
+    
+    
+    
+    def post(self,request):
+        
+        serializer = EmployeePasswordResetSerailizer(data=request.data,context={'request':self.request})
+        
+        if serializer.is_valid(raise_exception=True):
+            
+            data = serializer.data 
+            
+            return Response({'success':'password changed'},status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors ,status=status.HTTP_400_BAD_REQUEST)
+        
+        
+class EmployeeProfileRetriveAPIView(BasicJWTAuthMixin,views.APIView):
+    
+    
+    def get(self,request):
+        
+        serializer = EmployeeeProfileSerializer(instance=request.user) 
+        data = serializer.data    
+        return Response(data,status=status.HTTP_200_OK)
+
+
+class DepartmentsListAPIView(AdminOrHrJWTAuthMixin,views.APIView):
+    
+    
+    def get(self,request):
+        
+        serializer = DepartmentListSerializer(instance=Department.objects.all(),many=True)
+        data       = serializer.data
+        return Response(data,status=status.HTTP_200_OK)
+        
+        
