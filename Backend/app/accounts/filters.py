@@ -10,16 +10,21 @@ USER  = get_user_model()
 class EmployeeFilterSet(filters.FilterSet):
     
     
-    department = filters.CharFilter(method='filter_departments')
+    dept = filters.CharFilter(method='filter_departments')
+    
+    def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
+        print(queryset)
+        super().__init__(data, queryset, request=request, prefix=prefix)
     
     
-    
-    def filter_departments(self,quesryset,name,value):    
+    def filter_departments(self,quesryset,name,value):   
+        
+        
 
         value        = value.upper()
         departments  = value.split(',')
                 
-        return quesryset.filter(department__name__in=departments)
+        return quesryset.filter(dept__name__in=departments)
         
         
     
@@ -29,5 +34,5 @@ class EmployeeFilterSet(filters.FilterSet):
     
     
     class Meta:
-        fields = ['department']
+        fields = ['dept']
         model  = USER

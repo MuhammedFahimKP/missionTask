@@ -8,7 +8,6 @@ class IsAdminOrHr(AdminOnlyPermission):
     def has_permission(self, request, view):
         
         if  isinstance(request,AnonymousUser) == False : 
-            print('fuck off porker')
             return  request.user.dept.name in [ "ADMIN","HR"]
         
         

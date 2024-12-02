@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouteObject } from "react-router-dom";
 
-const Singin = lazy(() => import("@/components/Forms/SigninForm"));
+const Singin = lazy(() => import("@/pages/SignIn"));
 const CustomForm = lazy(() => import("@/components/Forms/CustomForm"));
 const Empolyee = lazy(() => import("@/pages/Empolyee"));
 

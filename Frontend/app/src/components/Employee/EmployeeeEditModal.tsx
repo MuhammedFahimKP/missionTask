@@ -2,7 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useData } from "@/hooks";
 import Input from "@/components/Input";
 
-import type { DepartmentResponse, EmployeeCreateRequest } from "@/types";
+import type {
+  DepartmentResponse,
+  EmployeeCreateRequest,
+  ListUsers,
+} from "@/types";
 
 import * as Yup from "yup";
 import { type FormikHelpers, useFormik } from "formik";
@@ -10,12 +14,13 @@ import apiClient, { ApiClientError } from "@/services/api-client";
 
 interface Props {
   showModal: boolean;
+  id: string;
   handleModalDismiss: () => void;
   handleSuccess: () => void;
 }
 
-const RegisterModal: React.FC<Props> = (props) => {
-  const { showModal, handleModalDismiss, handleSuccess } = props;
+const EmployeeEditModal: React.FC<Props> = (props) => {
+  const { showModal, handleModalDismiss, handleSuccess, id } = props;
 
   const validationSchema = Yup.object().shape({
     name: Yup.string()
@@ -66,11 +71,35 @@ const RegisterModal: React.FC<Props> = (props) => {
       });
   };
 
-  const { values, errors, touched, handleChange, handleSubmit } = useFormik({
-    initialValues,
-    onSubmit,
-    validationSchema,
-  });
+  const { values, errors, touched, handleChange, handleSubmit, setValues } =
+    useFormik({
+      initialValues,
+      onSubmit,
+      validationSchema,
+    });
+
+  const [employee, setEmployee] = useState<ListUsers | null>(null);
+  const [_, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    apiClient
+      .get<ListUsers>(`employee/${id}/`, { signal: controller.signal })
+      .then((res) => {
+        setEmployee(res.data);
+        setValues({
+          email: res.data.email,
+          dept: res.data.dept,
+          name: res.data,
+        });
+      })
+      .catch((error: ApiClientError) => {
+        setError(error.message);
+      });
+
+    return () => controller.abort();
+  }, []);
 
   console.log(values);
 
@@ -87,8 +116,6 @@ const RegisterModal: React.FC<Props> = (props) => {
       });
     });
   }, [data]);
-
-  console.log(errors);
 
   return (
     <>

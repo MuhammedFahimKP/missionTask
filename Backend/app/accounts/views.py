@@ -2,11 +2,13 @@
 # Create your views here.
 from django.contrib.auth import get_user_model
 
+from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import generics
 from rest_framework import views
 from rest_framework import status
 from rest_framework.response import Response
+
 
 
 
@@ -23,7 +25,7 @@ from .serializers import (
 from .pagination import EmployeeLimitOffsetPagination
 from .mixins import BasicJWTAuthMixin,AdminOrHrJWTAuthMixin
 from .models import Department
-
+from .filters import EmployeeFilterSet
 
 USER = get_user_model()
 
@@ -40,6 +42,10 @@ class EmployeeCreateListAPIView(AdminOrHrJWTAuthMixin,generics.GenericAPIView):
     
     
     
+    filter_backends  = [DjangoFilterBackend,]
+    filterset_class     = EmployeeFilterSet 
+    
+    
     def get_serializer_class(self):
         
         if self.request.method == 'GET':
@@ -51,10 +57,13 @@ class EmployeeCreateListAPIView(AdminOrHrJWTAuthMixin,generics.GenericAPIView):
     def get(self,request):
         
         queryset         = self.filter_queryset(self.get_queryset())      
-        
+    
+    
         serializer_class = self.get_serializer_class()
         serializer       = serializer_class(queryset,many=True)
         
+        
+        print(self.filter_queryset(queryset))
         
         
         page = self.paginate_queryset(queryset)

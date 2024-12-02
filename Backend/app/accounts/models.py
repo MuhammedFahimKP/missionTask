@@ -37,5 +37,5 @@ class MyUser(AbstractBaseUser):
     
     
     class Meta:
-        ordering = ['email']
+        ordering = ['id']
     
